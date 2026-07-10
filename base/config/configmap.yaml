@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cinerankml-config
+  namespace: cinerankml
+data:
+  POSTGRES_USER: cinerankml
+  POSTGRES_DB: cinerankml
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  RATINGS_TOPIC: ratings
+  RATINGS_CONSUMER_GROUP: ratings-consumer
+
+  OPENSEARCH_HOST: opensearch
+  OPENSEARCH_PORT: "9200"
+  OPENSEARCH_INDEX_ALIAS: movies
+
+  EMBEDDER_BASE_URL: http://embedder-api:8080
+  EMBEDDING_VERSION: content-v1
+  EMBEDDING_MODEL_NAME: sentence-transformers/all-MiniLM-L6-v2
+  EMBEDDING_DIMENSION: "384"
+  EMBEDDING_TEXT_TEMPLATE_VERSION: v1
+
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_BUCKET: cinerankml
+
+  RECOMMENDER_HOST: "0.0.0.0"
+  RECOMMENDER_PORT: "8090"
+  SESSION_COOKIE_NAME: session_id
+  SESSION_TTL_DAYS: "7"
+  CANDIDATE_POOL_SIZE: "200"
+  DEFAULT_TOP_K: "20"
+  MIN_RATINGS_FOR_RECOMMEND: "5"
+  EXPERIMENT_ID: exp-main-vs-candidate
+  INITIAL_MAIN_SPLIT: "0.70"
+  INITIAL_CANDIDATE_SPLIT: "0.30"
+  MLFLOW_REGISTERED_MODEL_NAME: hybrid_ranker
+  # Browser origin for the public site (same host as /api).
+  CORS_ALLOW_ORIGINS: https://cinerankml.taahaamir.com
+
+  EMBEDDER_HOST: "0.0.0.0"
+  EMBEDDER_PORT: "8080"
+
+  WORKER_NAME: ratings-consumer
+  LOG_LEVEL: INFO
+  PROGRESS_LOG_EVERY_N: "10000"
+  METRICS_PORT: "9102"

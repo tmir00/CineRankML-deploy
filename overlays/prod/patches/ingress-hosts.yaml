@@ -1,0 +1,37 @@
+# Optional host overrides for prod. Base already uses cinerankml.taahaamir.com.
+# Keep this patch aligned with base so kubectl apply -k stays explicit.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cinerankml-api
+  namespace: cinerankml
+spec:
+  rules:
+    - host: cinerankml.taahaamir.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: recommender-api
+                port:
+                  number: 8090
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cinerankml-app
+  namespace: cinerankml
+spec:
+  rules:
+    - host: cinerankml.taahaamir.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

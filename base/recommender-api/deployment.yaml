@@ -1,0 +1,164 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommender-api
+  namespace: cinerankml
+  labels:
+    app.kubernetes.io/name: recommender-api
+    app.kubernetes.io/part-of: cinerankml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: recommender-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: recommender-api
+        app.kubernetes.io/part-of: cinerankml
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: recommender-api
+          image: ghcr.io/tmir00/cinerankml-recommender-api:latest
+          ports:
+            - name: http
+              containerPort: 8090
+            - name: metrics
+              containerPort: 9111
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cinerankml-secret
+                  key: DATABASE_URL
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: OPENSEARCH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: OPENSEARCH_HOST
+            - name: OPENSEARCH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: OPENSEARCH_PORT
+            - name: OPENSEARCH_INDEX_ALIAS
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: OPENSEARCH_INDEX_ALIAS
+            - name: S3_ENDPOINT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: S3_ENDPOINT_URL
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cinerankml-secret
+                  key: S3_ACCESS_KEY
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cinerankml-secret
+                  key: S3_SECRET_KEY
+            - name: S3_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: S3_BUCKET
+            - name: RECOMMENDER_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: RECOMMENDER_HOST
+            - name: RECOMMENDER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: RECOMMENDER_PORT
+            - name: METRICS_PORT
+              value: "9111"
+            - name: SESSION_COOKIE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: SESSION_COOKIE_NAME
+            - name: SESSION_TTL_DAYS
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: SESSION_TTL_DAYS
+            - name: CANDIDATE_POOL_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: CANDIDATE_POOL_SIZE
+            - name: DEFAULT_TOP_K
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: DEFAULT_TOP_K
+            - name: MIN_RATINGS_FOR_RECOMMEND
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: MIN_RATINGS_FOR_RECOMMEND
+            - name: EXPERIMENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: EXPERIMENT_ID
+            - name: INITIAL_MAIN_SPLIT
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: INITIAL_MAIN_SPLIT
+            - name: INITIAL_CANDIDATE_SPLIT
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: INITIAL_CANDIDATE_SPLIT
+            - name: MLFLOW_REGISTERED_MODEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: MLFLOW_REGISTERED_MODEL_NAME
+            - name: CORS_ALLOW_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: CORS_ALLOW_ORIGINS
+            - name: EMBEDDER_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: EMBEDDER_BASE_URL
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 18
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              memory: 2Gi

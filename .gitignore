@@ -1,0 +1,8 @@
+# Local secret overrides (never commit real values)
+**/secret.local.yaml
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+README.md

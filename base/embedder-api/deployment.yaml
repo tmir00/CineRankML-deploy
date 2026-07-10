@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: embedder-api
+  namespace: cinerankml
+  labels:
+    app.kubernetes.io/name: embedder-api
+    app.kubernetes.io/part-of: cinerankml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embedder-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: embedder-api
+        app.kubernetes.io/part-of: cinerankml
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: embedder-api
+          image: ghcr.io/tmir00/cinerankml-embedder-api:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: EMBEDDING_MODEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: EMBEDDING_MODEL_NAME
+            - name: EMBEDDER_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: EMBEDDER_HOST
+            - name: EMBEDDER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: EMBEDDER_PORT
+            - name: METRICS_PORT
+              value: "9110"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 18
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1Gi
+            limits:
+              memory: 2Gi
