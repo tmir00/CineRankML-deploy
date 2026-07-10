@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch-exporter
+  namespace: cinerankml
+  labels:
+    app.kubernetes.io/name: opensearch-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opensearch-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: opensearch-exporter
+    spec:
+      containers:
+        - name: opensearch-exporter
+          image: quay.io/prometheuscommunity/elasticsearch-exporter:v1.8.0
+          args:
+            - --es.uri=http://opensearch:9200
+            - --es.indices
+          ports:
+            - name: metrics
+              containerPort: 9114
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 12
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-exporter
+  namespace: cinerankml
+  labels:
+    app.kubernetes.io/name: opensearch-exporter
+spec:
+  selector:
+    app.kubernetes.io/name: opensearch-exporter
+  ports:
+    - name: metrics
+      port: 9114
+      targetPort: metrics

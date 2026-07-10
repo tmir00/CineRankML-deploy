@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-exporter
+  namespace: cinerankml
+  labels:
+    app.kubernetes.io/name: postgres-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-exporter
+    spec:
+      containers:
+        - name: postgres-exporter
+          image: prometheuscommunity/postgres-exporter:v0.15.0
+          args:
+            - --extend.query-path=/queries/queries.yml
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cinerankml-secret
+                  key: POSTGRES_PASSWORD
+            - name: DATA_SOURCE_NAME
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
+          ports:
+            - name: metrics
+              containerPort: 9187
+          volumeMounts:
+            - name: queries
+              mountPath: /queries
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: queries
+          configMap:
+            name: postgres-exporter-queries
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-exporter
+  namespace: cinerankml
+  labels:
+    app.kubernetes.io/name: postgres-exporter
+spec:
+  selector:
+    app.kubernetes.io/name: postgres-exporter
+  ports:
+    - name: metrics
+      port: 9187
+      targetPort: metrics

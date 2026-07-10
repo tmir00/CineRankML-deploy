@@ -25,6 +25,8 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            - name: metrics
+              containerPort: 9110
           env:
             - name: EMBEDDING_MODEL_NAME
               valueFrom:

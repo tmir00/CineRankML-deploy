@@ -1,0 +1,142 @@
+cinerankml_table_counts:
+  query: |
+    SELECT 'ratings_events' AS table, COUNT(*) AS count FROM ratings_events
+    UNION ALL
+    SELECT 'tag_events', COUNT(*) FROM tag_events
+    UNION ALL
+    SELECT 'catalog_movies', COUNT(*) FROM catalog_movies
+    UNION ALL
+    SELECT 'catalog_dirty_movies', COUNT(*) FROM catalog_dirty_movies
+    UNION ALL
+    SELECT 'dead_letter_events', COUNT(*) FROM dead_letter_events
+    UNION ALL
+    SELECT 'csv_ingestion_checkpoints', COUNT(*) FROM csv_ingestion_checkpoints
+  metrics:
+    - table:
+        usage: LABEL
+        description: "Postgres table name"
+      count:
+        usage: GAUGE
+        description: "Row count for the table"
+
+cinerankml_enrichment_pending_movies:
+  query: |
+    SELECT COUNT(*) AS pending
+    FROM catalog_movies
+    WHERE tmdb_id IS NOT NULL
+      AND enrichment_status IS NULL
+  metrics:
+    - pending:
+        usage: GAUGE
+        description: "Movies never attempted for TMDB enrichment"
+
+cinerankml_enrichment_status_counts:
+  query: |
+    SELECT enrichment_status AS status, COUNT(*) AS count
+    FROM catalog_movies
+    WHERE enrichment_status IS NOT NULL
+    GROUP BY enrichment_status
+  metrics:
+    - status:
+        usage: LABEL
+        description: "catalog_movies enrichment_status value"
+      count:
+        usage: GAUGE
+        description: "Movies with this enrichment status"
+
+cinerankml_enrichment_failure_reasons:
+  query: |
+    SELECT enrichment_last_error AS reason, COUNT(*) AS count
+    FROM catalog_movies
+    WHERE enrichment_status = 'failed'
+      AND enrichment_last_error IS NOT NULL
+    GROUP BY enrichment_last_error
+  metrics:
+    - reason:
+        usage: LABEL
+        description: "TMDB enrichment failure reason"
+      count:
+        usage: GAUGE
+        description: "Failed movies with this reason"
+
+cinerankml_dirty_movies_count:
+  query: |
+    SELECT COUNT(*) AS dirty_movies_count
+    FROM catalog_dirty_movies
+  metrics:
+    - dirty_movies_count:
+        usage: GAUGE
+        description: "Movies waiting for OpenSearch sync"
+
+cinerankml_oldest_dirty_movie_age_seconds:
+  query: |
+    SELECT COALESCE(
+      EXTRACT(EPOCH FROM (now() - MIN(first_dirty_at))),
+      0
+    ) AS oldest_dirty_movie_age_seconds
+    FROM catalog_dirty_movies
+  metrics:
+    - oldest_dirty_movie_age_seconds:
+        usage: GAUGE
+        description: "Age in seconds of the oldest dirty movie"
+
+cinerankml_recommendation_table_counts:
+  query: |
+    SELECT 'recommendation_impressions' AS table, COUNT(*) AS count FROM recommendation_impressions
+    UNION ALL
+    SELECT 'recommendation_ratings', COUNT(*) FROM recommendation_ratings
+  metrics:
+    - table:
+        usage: LABEL
+        description: "Online experiment log table name"
+      count:
+        usage: GAUGE
+        description: "Row count for the table"
+
+cinerankml_recommendation_impressions_by_experiment:
+  query: |
+    SELECT experiment_id, model_role, COUNT(*) AS count
+    FROM recommendation_impressions
+    GROUP BY experiment_id, model_role
+  metrics:
+    - experiment_id:
+        usage: LABEL
+        description: "Online experiment id"
+      model_role:
+        usage: LABEL
+        description: "Model role (main or candidate)"
+      count:
+        usage: GAUGE
+        description: "Impression count for this experiment and model role"
+
+cinerankml_recommendation_ratings_by_experiment:
+  query: |
+    SELECT experiment_id, model_role, COUNT(*) AS count
+    FROM recommendation_ratings
+    GROUP BY experiment_id, model_role
+  metrics:
+    - experiment_id:
+        usage: LABEL
+        description: "Online experiment id"
+      model_role:
+        usage: LABEL
+        description: "Model role (main or candidate)"
+      count:
+        usage: GAUGE
+        description: "Rating count for this experiment and model role"
+
+cinerankml_experiment_split_fractions:
+  query: |
+    SELECT experiment_id, main_split_fraction, candidate_split_fraction
+    FROM recommendation_experiments
+    WHERE status = 'active'
+  metrics:
+    - experiment_id:
+        usage: LABEL
+        description: "Active online experiment id"
+      main_split_fraction:
+        usage: GAUGE
+        description: "Current main model recommendation fraction"
+      candidate_split_fraction:
+        usage: GAUGE
+        description: "Current candidate model recommendation fraction"

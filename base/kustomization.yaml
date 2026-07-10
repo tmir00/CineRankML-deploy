@@ -6,7 +6,6 @@ namespace: cinerankml
 resources:
   - namespace.yaml
   - config/configmap.yaml
-  - config/secret.yaml
   - postgres/statefulset.yaml
   - postgres/service.yaml
   - kafka/statefulset.yaml
@@ -18,6 +17,7 @@ resources:
   - minio/init-job.yaml
   - migrate/job.yaml
   - ratings-consumer/deployment.yaml
+  - ratings-consumer/service.yaml
   - embedder-api/deployment.yaml
   - embedder-api/service.yaml
   - recommender-api/deployment.yaml
@@ -25,6 +25,29 @@ resources:
   - frontend/deployment.yaml
   - frontend/service.yaml
   - ingress/ingress.yaml
+  - observability/prometheus/deployment.yaml
+  - observability/grafana/deployment.yaml
+  - observability/postgres-exporter/deployment.yaml
+  - observability/opensearch-exporter/deployment.yaml
+
+configMapGenerator:
+  - name: prometheus-config
+    files:
+      - prometheus.yml=observability/files/prometheus.yml
+  - name: postgres-exporter-queries
+    files:
+      - queries.yml=observability/files/queries.yml
+  - name: grafana-dashboards
+    files:
+      - catalog-enrichment.json=observability/grafana/dashboards/catalog-enrichment.json
+      - kafka-ingestion.json=observability/grafana/dashboards/kafka-ingestion.json
+      - online-recommendations.json=observability/grafana/dashboards/online-recommendations.json
+      - opensearch-sync.json=observability/grafana/dashboards/opensearch-sync.json
+      - postgres-health.json=observability/grafana/dashboards/postgres-health.json
+      - service-health.json=observability/grafana/dashboards/service-health.json
+
+generatorOptions:
+  disableNameSuffixHash: true
 
 labels:
   - pairs:
