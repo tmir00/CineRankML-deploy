@@ -16,13 +16,14 @@ Kubernetes (k3s) manifests for the CineRankML online stack, managed with Kustomi
 | embedder-api | Deployment | Content embeddings HTTP API |
 | recommender-api | Deployment | Online recommendations |
 | frontend | Deployment | nginx static UI (prod image) |
+| mlflow | Deployment | Tracking/registry (ClusterIP only); Postgres DB `mlflow` + PVC artifacts |
 | prometheus | Deployment | Scrapes app + exporters (ClusterIP only) |
 | grafana | Deployment | Dashboards; Ingress `/grafana` |
 | postgres-exporter | Deployment | Custom CineRankML SQL metrics |
 | opensearch-exporter | Deployment | OpenSearch index metrics |
 | Ingress | Traefik | `/` frontend, `/api` API, `/grafana` Grafana |
 
-**Not deployed here:** ratings-producer, tags workers, catalog/ML jobs, pushgateway, MLflow.
+**Not deployed here:** ratings-producer, tags workers, catalog/ML training jobs, pushgateway.
 
 ## Layout
 
@@ -150,9 +151,74 @@ Build the frontend image with:
 VITE_RECOMMENDER_API_URL=https://cinerankml.taahaamir.com/api
 ```
 
-`CORS_ALLOW_ORIGINS` is set to `https://cinerankml.taahaamir.com` in the ConfigMap.
+`CORS_ALLOW_ORIGINS` is a JSON array in the ConfigMap (required by pydantic-settings), e.g.
+`'["https://cinerankml.taahaamir.com"]'`.
 Until TLS is enabled, use the `http://` variants for both CORS and the Vite build arg,
 and keep the Ingress on the `web` entrypoint.
+
+## MLflow (ClusterIP)
+
+MLflow is in-cluster only (no Ingress). Compose parity:
+
+- Image `ghcr.io/mlflow/mlflow:v3.14.0`
+- Backend store: Postgres database `mlflow` on the shared `postgres` StatefulSet
+- Artifacts: PVC `mlflow-artifacts` mounted at `/mlflow/artifacts`
+- Clients use `MLFLOW_TRACKING_URI=http://mlflow:5000` (wired into recommender-api)
+
+Open the UI from your laptop:
+
+```bash
+export KUBECONFIG=$HOME/.kube/config   # on the VPS, or use a local kubeconfig
+kubectl -n cinerankml port-forward svc/mlflow 5000:5000
+# then http://localhost:5000
+```
+
+### Migrate local Compose MLflow → VPS
+
+Online model **weights** still live in MinIO (`s3://cinerankml/models/...`). Migrating
+MLflow restores the registry/aliases; mirror MinIO models separately if needed.
+
+**1. Dump the local `mlflow` database** (from the CineRankML Compose project):
+
+```bash
+docker compose exec -T postgres pg_dump -U cinerankml -Fc mlflow > mlflow.dump
+```
+
+**2. Export the local artifact volume** (confirm the volume name with `docker volume ls`;
+Compose usually names it `<project>_mlflowdata`):
+
+```bash
+mkdir -p mlflow-artifacts-export
+docker run --rm \
+  -v cinerankml_mlflowdata:/from \
+  -v "${PWD}/mlflow-artifacts-export:/to" \
+  alpine sh -c 'cd /from && tar czf /to/artifacts.tgz .'
+```
+
+**3. Copy dumps to the VPS**, then restore (MLflow must be scaled down during DB restore):
+
+```bash
+export KUBECONFIG=$HOME/.kube/config
+kubectl -n cinerankml scale deploy/mlflow --replicas=0
+
+kubectl -n cinerankml cp mlflow.dump postgres-0:/tmp/mlflow.dump
+kubectl -n cinerankml exec postgres-0 -- \
+  bash -c 'dropdb -U cinerankml --if-exists mlflow; createdb -U cinerankml mlflow; pg_restore -U cinerankml -d mlflow --clean --if-exists /tmp/mlflow.dump'
+
+# Restore artifacts into the PVC (debug pod mounts the same claim)
+kubectl -n cinerankml run mlflow-restore --rm -it --restart=Never \
+  --image=alpine \
+  --overrides='{"spec":{"containers":[{"name":"mlflow-restore","image":"alpine","command":["sleep","3600"],"volumeMounts":[{"name":"artifacts","mountPath":"/mlflow/artifacts"}]}],"volumes":[{"name":"artifacts","persistentVolumeClaim":{"claimName":"mlflow-artifacts"}}]}}' &
+# wait until Running, then:
+kubectl -n cinerankml cp mlflow-artifacts-export/artifacts.tgz mlflow-restore:/tmp/artifacts.tgz
+kubectl -n cinerankml exec mlflow-restore -- \
+  sh -c 'rm -rf /mlflow/artifacts/*; tar xzf /tmp/artifacts.tgz -C /mlflow/artifacts'
+kubectl -n cinerankml delete pod mlflow-restore --ignore-not-found
+
+kubectl -n cinerankml scale deploy/mlflow --replicas=1
+kubectl -n cinerankml rollout status deploy/mlflow --timeout=180s
+kubectl -n cinerankml rollout restart deploy/recommender-api
+```
 
 ## Out-of-band data bootstrap
 
@@ -164,6 +230,7 @@ Compose jobs) and copy into the VPS:
 2. **Catalog / ratings** — restore or seed Postgres (e.g. dump/restore from a local run).
 3. **OpenSearch index** — sync locally, then snapshot/restore or re-run sync against the VPS OpenSearch when you add that job later.
 4. **Model + CF artifacts** — upload into MinIO bucket `cinerankml` (same layout the API expects under `S3_ENDPOINT_URL`).
+5. **MLflow registry** — see [Migrate local Compose MLflow → VPS](#migrate-local-compose-mlflow--vps) above.
 
 Without those, pods may still start, but recommend paths will be empty or degraded.
 

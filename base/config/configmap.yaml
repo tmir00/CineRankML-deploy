@@ -37,6 +37,8 @@ data:
   INITIAL_MAIN_SPLIT: "0.70"
   INITIAL_CANDIDATE_SPLIT: "0.30"
   MLFLOW_REGISTERED_MODEL_NAME: hybrid_ranker
+  MLFLOW_TRACKING_URI: http://mlflow:5000
+  MLFLOW_SERVER_ALLOWED_HOSTS: "mlflow:*,localhost:*,127.0.0.1:*"
   # Browser origin for the public site (same host as /api).
   # Must be JSON — pydantic-settings parses list[str] from env as JSON.
   CORS_ALLOW_ORIGINS: '["https://cinerankml.taahaamir.com"]'

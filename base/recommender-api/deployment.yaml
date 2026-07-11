@@ -130,6 +130,11 @@ spec:
                 configMapKeyRef:
                   name: cinerankml-config
                   key: MLFLOW_REGISTERED_MODEL_NAME
+            - name: MLFLOW_TRACKING_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: cinerankml-config
+                  key: MLFLOW_TRACKING_URI
             - name: CORS_ALLOW_ORIGINS
               valueFrom:
                 configMapKeyRef:

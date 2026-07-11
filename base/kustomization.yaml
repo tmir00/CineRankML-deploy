@@ -15,6 +15,9 @@ resources:
   - minio/statefulset.yaml
   - minio/service.yaml
   - minio/init-job.yaml
+  - mlflow/pvc.yaml
+  - mlflow/deployment.yaml
+  - mlflow/service.yaml
   - migrate/job.yaml
   - ratings-consumer/deployment.yaml
   - ratings-consumer/service.yaml

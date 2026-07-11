@@ -77,6 +77,25 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: mlflow
+  namespace: cinerankml
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: mlflow
+          resources:
+            requests:
+              cpu: 50m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1536Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: embedder-api
   namespace: cinerankml
 spec:
