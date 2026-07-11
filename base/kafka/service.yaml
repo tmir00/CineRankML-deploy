@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/part-of: cinerankml
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true
   selector:
     app.kubernetes.io/name: kafka
   ports:

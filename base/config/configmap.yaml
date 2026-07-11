@@ -38,7 +38,8 @@ data:
   INITIAL_CANDIDATE_SPLIT: "0.30"
   MLFLOW_REGISTERED_MODEL_NAME: hybrid_ranker
   # Browser origin for the public site (same host as /api).
-  CORS_ALLOW_ORIGINS: https://cinerankml.taahaamir.com
+  # Must be JSON — pydantic-settings parses list[str] from env as JSON.
+  CORS_ALLOW_ORIGINS: '["https://cinerankml.taahaamir.com"]'
 
   EMBEDDER_HOST: "0.0.0.0"
   EMBEDDER_PORT: "8080"
