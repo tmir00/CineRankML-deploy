@@ -8,19 +8,19 @@ resources:
 images:
 - name: ghcr.io/tmir00/cinerankml-embedder-api
   newName: ghcr.io/tmir00/cinerankml-embedder-api
-  newTag: 225b85ef5280785342047f68f6e7dd8b94cb0deb
+  newTag: a1e593472f2ae0d7f00ba8732a6120f17f750af0
 - name: ghcr.io/tmir00/cinerankml-frontend
   newName: ghcr.io/tmir00/cinerankml-frontend
-  newTag: 225b85ef5280785342047f68f6e7dd8b94cb0deb
+  newTag: a1e593472f2ae0d7f00ba8732a6120f17f750af0
 - name: ghcr.io/tmir00/cinerankml-migrate
   newName: ghcr.io/tmir00/cinerankml-migrate
-  newTag: 225b85ef5280785342047f68f6e7dd8b94cb0deb
+  newTag: a1e593472f2ae0d7f00ba8732a6120f17f750af0
 - name: ghcr.io/tmir00/cinerankml-ratings-consumer
   newName: ghcr.io/tmir00/cinerankml-ratings-consumer
-  newTag: 225b85ef5280785342047f68f6e7dd8b94cb0deb
+  newTag: a1e593472f2ae0d7f00ba8732a6120f17f750af0
 - name: ghcr.io/tmir00/cinerankml-recommender-api
   newName: ghcr.io/tmir00/cinerankml-recommender-api
-  newTag: 225b85ef5280785342047f68f6e7dd8b94cb0deb
+  newTag: a1e593472f2ae0d7f00ba8732a6120f17f750af0
 
 patches:
 - path: patches/resources.yaml
